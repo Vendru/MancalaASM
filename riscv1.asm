@@ -11,8 +11,8 @@ msg_play .asciz "Insira o número da casa para a jogada: "
 
 .align 2
 
-BOARD_P1: .word 0,4,4,4,4,4,4
-BOARD_P2: .word 4,4,4,4,4,4,0
+BOARD_P1: .space 28
+BOARD_P2: .space 28
 
 .text
 .globl main

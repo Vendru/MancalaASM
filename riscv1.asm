@@ -8,6 +8,8 @@ p1_mancala: .asciz "\n P1 Mancala: "
 newline:  .asciz "\n"
 barra: .asciz " | "
 msg_play: .asciz "Insira o número da casa para a jogada: "
+msg_teste: .asciz "\n teste!"
+msg_fim_erro: .asciz "Isso é um erro, o programa chegou ao fim"
 
 n0: .word 0
 n4: .word 4
@@ -23,9 +25,10 @@ BOARD_P2: .space 28
 
 main:
 call board_init
-#li a7,10
-#ecall
+
+main_loop:
 call imprime_tabuleiro
+call play
 
 board_init:
 la s2, BOARD_P1
@@ -54,7 +57,7 @@ sw t0, 24(s3)
 j ret
 
 imprime_tabuleiro:
-mv a2, s2
+mv a2, s2 #copia o tabuleiro "verdadeiro" (s2 e s3) para a2 e a3
 mv a3, s3
 li t0, 0 #indice
 li t1, 7
@@ -91,30 +94,51 @@ addi a3, a3, 4
 j imprime_p2
 	
 fim_imprime_p2:
-li a7, 10
-ecall
+j ret
 
 play: 
-li t0, 1
+li t0, 1 #checa de quem é o turno
 li t1, 2
 ble s0, t0, play_p1
 bge s0, t1, play_p2
 
 play_p1:
-la a0, msg_play
+la a0, p1_label
 li a7, 4
+ecall #P1 (msg_play)
+la a0, msg_play
+ecall #print msg play
+
+li a7, 5
+ecall #le int
+mv t1, a0 #t1=int lida
+
+
+play_p2:
+la a0, p2_label
+li a7, 4
+ecall #P2 (msg_play)
+la a0, msg_play
 ecall
 li a7, 5
 ecall
 mv t1, a0
 
-play_p2:
-la a0, msg_play
+fim_erro:
+la a0, msg_fim_erro
 li a7, 4
 ecall
-li a7, 5
+
+fim:
+li a7,10
 ecall
-mv t1, a0
+
+teste:
+la a0, msg_teste
+li a7, 4
+ecall
+j fim
 
 ret:
 ret
+

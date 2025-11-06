@@ -7,7 +7,7 @@ mancala:   .asciz "\n P2 Mancala: "
 p1_mancala: .asciz "\n P1 Mancala: "
 newline:  .asciz "\n"
 barra: .asciz " | "
-msg_play: .asciz "Insira o número da casa para a jogada: "
+msg_play: .asciz "Insira o número da casa para a jogada (0 a 5): "
 msg_teste: .asciz "\n teste!"
 msg_fim_erro: .asciz "Isso é um erro, o programa chegou ao fim"
 
@@ -20,7 +20,7 @@ BOARD_P1: .space 28
 BOARD_P2: .space 28
 
 .text
-.globl main
+
 ###################################### s0 - turno; s1 - vitórias, s2 - board p1 s3 - board p2;###########################################v
 
 main:
@@ -108,10 +108,18 @@ li a7, 4
 ecall #P1 (msg_play)
 la a0, msg_play
 ecall #print msg play
-
 li a7, 5
 ecall #le int
 mv t1, a0 #t1=int lida
+
+li t2, 4
+mul t1, t1,t2 #int lida*4
+mv a5, s2 #a5 = tabuleiro
+add a5, t1, a5 #a5=casa escolhida para jogada
+lw t0, (a5) #t0=numero de sementes da casa
+sw zero, (a5) #zera a casa escolhida
+
+loop_play_p1:
 
 
 play_p2:

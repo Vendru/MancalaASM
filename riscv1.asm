@@ -16,8 +16,7 @@ n4: .word 4
 
 .align 2
 
-BOARD_P1: .space 28
-BOARD_P2: .space 28
+BOARD: .space 56
 
 .text
 
@@ -31,9 +30,10 @@ call imprime_tabuleiro
 call play
 
 board_init:
-la s2, BOARD_P1
-la s3, BOARD_P2
+la s2, BOARD #carrega o address do inicio do board
 
+li t0, 28 #offset para 7 words(cada player vai ter 7 casas * 4 bytes, 28)
+add s3, s2, t0 #ponteiro para inicio do tabuleiro do p2, board+ 28 bytes, 7 casas a direita
 
 reset_board: #reseta todas as posicoes do tabuleiro
 li t0, 0

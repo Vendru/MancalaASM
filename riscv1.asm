@@ -61,16 +61,25 @@ main_loop:
 	
 inicializar_tabuleiro:
 	lw t0, SEEDS_INIT # t0 recebe 4 sementes iniciais
-	lw t1, tabuleiro # t1 = 14 cavidades
-	li t2, 0 # t2 = i contador
-	li t5, 4
-init_loop:
 	
+	# --- CORREÇÃO AQUI ---
+	# 'lw t1, tabuleiro' estava errado (carregava 0)
+	# Precisamos carregar o NÚMERO 14 (total de cavidades)
+	li t1, 14 # t1 = 14 cavidades
+	# --- FIM DA CORREÇÃO ---
+	
+	li t2, 0 # t2 = i contador
+	li t6, 4 # t6 = 4 (para multiplicação de offset)
+	
+init_loop:
 	beq t2, t1, init_fim # se chegar na ultima cavidade acaba o loop init
-	mul t3, t2, t5 # multiplica o indice por 4 para o addi, o deslocamento é de 4 em 4 bytes
+	
+	mul t3, t2, t6 # multiplica o indice por 4 para o addi, o deslocamento é de 4 em 4 bytes
+	
 	# verifica se algum dos deslocamentos for igual aos dos poços
 	beq t3, s2, init_poco
 	beq t3, s3, init_poco
+	
 	add t4, s0, t3 # t4 recebe o endereço inicial do tabuleiro + deslocamento
 	sw t0, 0(t4) # carrega o seeds init na cavidade -> 4 sementes
 	j init_continua
@@ -79,6 +88,10 @@ init_poco:
 	add t4, s0, t3
 	sw zero, 0(t4) #como é poço preenche com nada = 0
 
+init_continua:
+	addi t2, t2, 1
+	j init_loop
+	
 init_fim:
 	la t0, player_atual
 	li t1, 1
@@ -104,13 +117,14 @@ mostrar_tabuleiro:
 	
 	li t0, 12 #indice t0 que começa em 12
 	li t1, 6 #t1 limite do p2, que termina em 6
+	li t6, 4 # Carrega o '4' para o offset fora do loop
 	
 print_loop_p2:
 	beq t0, t1, print_loop_p2_fim
-	li t6, 4
+	
 	mul t2, t0, t6 #deslocamento indice * 4
 	add t3, s0, t2 #deslocamento + endereço base = posição desejada
-	lw a0, (t3) #carrega o valor de sementes
+	lw a0, 0(t3) #carrega o valor de sementes
 	li a7, 1
 	ecall
 	
@@ -126,7 +140,7 @@ print_loop_p2_fim:
 	li a7, 4
 	ecall
 	
-	add t0, s0, s3 
+	add t0, s0, s3
 	lw a0, 0(t0)
 	li a7, 1
 	ecall
@@ -146,7 +160,7 @@ print_espacos_meio:
 print_espacos_meio_fim:
 	
 	add t0, s0, s2        # Endereço poço P1
-	lw a0, (t0)
+	lw a0, 0(t0)
 	li a7, 1
 	ecall
 	
@@ -154,17 +168,18 @@ print_espacos_meio_fim:
 	li a7, 4
 	ecall
 
-	#  imprime lado P1 (0 a 5)
+	# imprime lado P1 (0 a 5)
 	la a0, espaco
 	li a7, 4
 	ecall
 
 	li t0, 0 # t0 = i (começa em 0)
 	li t1, 6 # t1 = limite (para quando i == 6)
+	li t6, 4 # Carrega o '4' para o offset fora do loop
 	
 print_loop_p1:
 	beq t0, t1, print_loop_p1_fim
-	li t6, 4
+	
 	mul t2, t0, t6
 	add t3, s0, t2
 	lw a0, 0(t3)
@@ -255,7 +270,7 @@ salva_turno:
 
 jogada_invalida:
 	la a0, msg_invalida
-	li a7, 4 
+	li a7, 4
 	ecall
 	j pede_jogada
 
@@ -263,7 +278,7 @@ jogada_sem_sementes:
 	la a0, msg_sem_sementes
 	li a7, 4
 	ecall
-	j pedir_jogada
+	j pede_jogada
 	
 fim_processa_jogada:
 	lw ra, 0(sp)
@@ -271,8 +286,8 @@ fim_processa_jogada:
 	ret
 	
 distribui_sementes:
-	mv t0, a0             # t0 = índice atual
-	mv t1, a1             # t1 = sementes na mão
+	mv t0, a0               # t0 = índice atual
+	mv t1, a1               # t1 = sementes na mão
 	
 	#esvazia a cavidade inicial
 	li t6, 4
@@ -283,9 +298,65 @@ distribui_sementes:
 distribui_loop:
 	beq t1, zero, distribui_fim
 	
-	li a0, 0 #EXEMPLO RETORNO
+	addi t0, t0, 1
+	
+	# --- CORREÇÃO AQUI ---
+	# 'lw t2, tabuleiro' estava errado (carregava 0)
+	# Precisamos carregar o NÚMERO 14
+	li t2, 14 # t2 = 14 (total de cavidades)
+	# --- FIM DA CORREÇÃO ---
+	
+	bne t0, t2, distribui_continua
+	li t0, 0
+distribui_continua:
+
+	li t6, 4
+	mul t2, t0, t6
+	
+	li t3, 1
+	beq s1, t3, checa_poco_p2
+	
+	beq t2, s2, distribui_loop
+	j distribui_plantar
+	
+checa_poco_p2:
+	beq t2, s3, distribui_loop
+	
+distribui_plantar:
+	add t3, s0, t2
+	lw t4, 0(t3) #carrega sementes atuais
+	addi t4, t4, 1
+	sw t4, 0(t3)
+	
+	addi t1, t1, -1
+	j distribui_loop
+	
+distribui_fim:
+	li t1, 1
+	beq s1, t1, checa_poco_p1
+	
+	beq t2, s3, distribui_denovo
+	j checa_captura
+	
+checa_poco_p1:
+	beq t2, s2, distribui_denovo
+	
+checa_captura:
+	li t6, 1
+	bne t4, t6, troca_turno
+	
+	# (Lógica de captura real viria aqui)
+	
+	j troca_turno
+	
+distribui_denovo:
+	li a0, 1
 	ret
 
+troca_turno:
+	li a0, 0
+	ret
+	
 verifica_fim_jogo:
 	# Salva registradores que vamos usar
 	addi sp, sp, -20
@@ -293,16 +364,16 @@ verifica_fim_jogo:
 	sw s4, 4(sp)  # s4 = soma_p1
 	sw s5, 8(sp)  # s5 = soma_p2
 	sw s6, 12(sp) # s6 = registrador de loop
-	sw s7, 16(sp) # s7 = endere�o do po�o
+	sw s7, 16(sp) # s7 = endereço do poço
 
 	# 1. Soma as sementes do lado do P1 (cavidades 0-5)
 	li s4, 0 # s4 = soma_p1 = 0
 	li s6, 0 # s6 = i = 0
+	li t1, 4 # Carrega '4' para o offset fora do loop
 check_p1_loop:
 	li t0, 6 # limite
 	beq s6, t0, check_p1_fim
 	
-	li t1, 4
 	mul t2, s6, t1
 	add t3, s0, t2
 	lw t4, 0(t3)  # Carrega sementes da cavidade
@@ -315,11 +386,11 @@ check_p1_fim:
 	# 2. Soma as sementes do lado do P2 (cavidades 7-12)
 	li s5, 0 # s5 = soma_p2 = 0
 	li s6, 7 # s6 = i = 7
+	li t1, 4 # Carrega '4' para o offset fora do loop
 check_p2_loop:
 	li t0, 13 # limite
 	beq s6, t0, check_p2_fim
 	
-	li t1, 4
 	mul t2, s6, t1
 	add t3, s0, t2
 	lw t4, 0(t3)  # Carrega sementes da cavidade
@@ -329,40 +400,40 @@ check_p2_loop:
 	j check_p2_loop
 check_p2_fim:
 
-	# 3. Verifica se algum lado est� vazio
-	beq s4, zero, game_over # Lado P1 est� vazio?
-	beq s5, zero, game_over # Lado P2 est� vazio?
+	# 3. Verifica se algum lado está vazio
+	beq s4, zero, game_over # Lado P1 está vazio?
+	beq s5, zero, game_over # Lado P2 está vazio?
 	
-	# Se nenhum lado est� vazio, o jogo continua
-	li a0, 0 # Retorna 0 (jogo n�o acabou)
+	# Se nenhum lado está vazio, o jogo continua
+	li a0, 0 # Retorna 0 (jogo não acabou)
 	j restore_and_ret
 
 game_over:
 	# Jogo acabou. Precisamos fazer a captura final.
 	
-	# Carrega po�o P1
-	add s7, s0, s2 # Endere�o do po�o P1
-	lw t0, 0(s7)   # Valor atual po�o P1
+	# Carrega poço P1
+	add s7, s0, s2 # Endereço do poço P1
+	lw t0, 0(s7)   # Valor atual poço P1
 	
-	# Carrega po�o P2
-	add s6, s0, s3 # Endere�o do po�o P2
-	lw t1, 0(s6)   # Valor atual po�o P2
+	# Carrega poço P2
+	add s6, s0, s3 # Endereço do poço P2
+	lw t1, 0(s6)   # Valor atual poço P2
 	
 	# Se o lado P1 (s4) estava vazio, P2 captura o que sobrou (s5)
 	# Se o lado P2 (s5) estava vazio, P1 captura o que sobrou (s4)
 	
-	bne s4, zero, p2_side_empty # O lado P1 N�O estava vazio? Pule.
+	bne s4, zero, p2_side_empty # O lado P1 NÃO estava vazio? Pule.
 	
-	# Lado P1 estava vazio. Mova s5 (soma P2) para o po�o P2.
-	add t1, t1, s5 # po�o_p2 += soma_p2
-	sw t1, 0(s6)   # Salva novo valor no po�o P2
+	# Lado P1 estava vazio. Mova s5 (soma P2) para o poço P2.
+	add t1, t1, s5 # poço_p2 += soma_p2
+	sw t1, 0(s6)   # Salva novo valor no poço P2
 	call clear_p2_side # Limpa as cavidades do P2
 	j set_game_over_return
 	
 p2_side_empty:
-	# Lado P2 estava vazio. Mova s4 (soma P1) para o po�o P1.
-	add t0, t0, s4 # po�o_p1 += soma_p1
-	sw t0, 0(s7)   # Salva novo valor no po�o P1
+	# Lado P2 estava vazio. Mova s4 (soma P1) para o poço P1.
+	add t0, t0, s4 # poço_p1 += soma_p1
+	sw t0, 0(s7)   # Salva novo valor no poço P1
 	call clear_p1_side # Limpa as cavidades do P1
 
 set_game_over_return:
@@ -384,12 +455,12 @@ clear_p1_side:
 	addi sp, sp, -4
 	sw ra, 0(sp)
 	li t0, 0 # i
+	li t2, 4 # Carrega '4' para o offset fora do loop
 clear_p1_loop:
 	li t1, 6 # limite
 	beq t0, t1, clear_p1_end
 	
-	li t2, 4
-	mul t2, t0, t2
+	mul t3, t0, t2
 	add t3, s0, t2
 	sw zero, 0(t3) # Zera a cavidade
 	
@@ -405,12 +476,12 @@ clear_p2_side:
 	addi sp, sp, -4
 	sw ra, 0(sp)
 	li t0, 7 # i
+	li t2, 4 # Carrega '4' para o offset fora do loop
 clear_p2_loop:
 	li t1, 13 # limite
 	beq t0, t1, clear_p2_end
 	
-	li t2, 4
-	mul t2, t0, t2
+	mul t3, t0, t2
 	add t3, s0, t2
 	sw zero, 0(t3) # Zera a cavidade
 	
@@ -427,17 +498,17 @@ fim_jogo:
 	# Mostra o tabuleiro final
 	call mostrar_tabuleiro
 	
-	# Carrega sementes dos po�os
-	add t0, s0, s2 # Endere�o po�o P1
+	# Carrega sementes dos poços
+	add t0, s0, s2 # Endereço poço P1
 	lw s4, 0(t0)   # s4 = total P1
-	add t1, s0, s3 # Endere�o po�o P2
+	add t1, s0, s3 # Endereço poço P2
 	lw s5, 0(t1)   # s5 = total P2
 	
 	# Compara os totais
 	bgt s4, s5, vitoria_p1
 	bgt s5, s4, vitoria_p2
 	
-	# Se n�o for maior, � empate
+	# Se não for maior, é empate
 	la a0, msg_empate
 	li a7, 4
 	ecall
@@ -447,7 +518,7 @@ vitoria_p1:
 	la a0, msg_vitoria_p1
 	li a7, 4
 	ecall
-	# Incrementa vit�rias P1
+	# Incrementa vitórias P1
 	la t0, vitorias_p1
 	lw t1, 0(t0)
 	addi t1, t1, 1
@@ -458,7 +529,7 @@ vitoria_p2:
 	la a0, msg_vitoria_p2
 	li a7, 4
 	ecall
-	# Incrementa vit�rias P2
+	# Incrementa vitórias P2
 	la t0, vitorias_p2
 	lw t1, 0(t0)
 	addi t1, t1, 1
@@ -490,17 +561,17 @@ fim_contagem:
 	li a7, 4
 	ecall
 	
-	la a0, newline # (Corrigindo: seu .data tem 'mewline', n�o 'newline')
+	la a0, newline
 	li a7, 4
 	ecall
 	
-	li a7, 5 # L� um inteiro
+	li a7, 5 # Lê um inteiro
 	ecall
 	
 	li t0, 1
 	beq a0, t0, novo_jogo # Se digitou 1, joga de novo
 	
-	# Se n�o, encerra o programa
+	# Se não, encerra o programa
 	li a7, 10
 	ecall
 

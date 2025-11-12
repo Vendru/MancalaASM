@@ -16,8 +16,8 @@
 	msg_sem_sementes: .asciz "Esta cavidade nÃ£o estÃ¡ semeada, escolha uma com sementes.\n"
 	msg_invalida: .asciz "Esta cavidade nÃ£o Ã© vÃ¡lida, tente novamente.\n"
 	
-	msg_p1: .asciz "      --> JOGADOR 1\n"
-	msg_p2: .asciz "      <-- JOGADOR 2\n"
+	msg_p1: .asciz "      Vez do jogador 1\n"
+	msg_p2: .asciz "      Vez do jogador 2\n"
 	msg_vitoria_p1: .asciz "\nVitÃ³ria do Player 1!"
 	msg_vitoria_p2: .asciz "\nVitÃ³ria do Player 2!"
 	msg_empate: .asciz "\nO Empate!"
@@ -30,7 +30,7 @@
 	newline: .asciz "\n"
 	
 .align 2
-	tabuleiro: .space 56 # 14 cavidadesw
+	tabuleiro: .space 56 # 14 cavidades
 
 .text
 	# s0: ponteiro base do tabuleiro
@@ -107,7 +107,7 @@ mostrar_tabuleiro:
 	
 print_loop_p2:
 	beq t0, t1, print_loop_p2_fim
-	li s6, 4
+	li t6, 4
 	mul t2, t0, t6 #deslocamento indice * 4
 	add t3, s0, t2 #deslocamento + endereÃ§o base = posiÃ§Ã£o desejada
 	lw a0, (t3) #carrega o valor de sementes
@@ -164,8 +164,8 @@ print_espacos_meio_fim:
 	
 print_loop_p1:
 	beq t0, t1, print_loop_p1_fim
-	li s6, 4
-	mul t2, t0, s6
+	li t6, 4
+	mul t2, t0, t6
 	add t3, s0, t2
 	lw a0, 0(t3)
 	li a7, 1
@@ -224,8 +224,8 @@ pede_jogada:
 	blt t3,t1, jogada_invalida
 	bgt t3,t2, jogada_invalida
 	
-	li s6, 4
-	mul t4, t3, s6
+	li t6, 4
+	mul t4, t3, t6
 	add t5, s0, t4
 	lw t6, 0(t5)
 	
@@ -274,11 +274,14 @@ distribui_sementes:
 	mv t0, a0             # t0 = Ã­ndice atual
 	mv t1, a1             # t1 = sementes na mÃ£o
 	
-	# Esvazia a cavidade inicial
-	li s4, 4
-	mul t2, t0, s4
+	#esvazia a cavidade inicial
+	li t6, 4
+	mul t2, t0, t6
 	add t2, s0, t2
 	sw zero, 0(t2)
+
+distribui_loop:
+	beq t1, zero, distribui_fim
 	
 	li a0, 0 #EXEMPLO RETORNO
 	ret
@@ -290,7 +293,7 @@ verifica_fim_jogo:
 	sw s4, 4(sp)  # s4 = soma_p1
 	sw s5, 8(sp)  # s5 = soma_p2
 	sw s6, 12(sp) # s6 = registrador de loop
-	sw s7, 16(sp) # s7 = endereço do poço
+	sw s7, 16(sp) # s7 = endereï¿½o do poï¿½o
 
 	# 1. Soma as sementes do lado do P1 (cavidades 0-5)
 	li s4, 0 # s4 = soma_p1 = 0
@@ -326,40 +329,40 @@ check_p2_loop:
 	j check_p2_loop
 check_p2_fim:
 
-	# 3. Verifica se algum lado está vazio
-	beq s4, zero, game_over # Lado P1 está vazio?
-	beq s5, zero, game_over # Lado P2 está vazio?
+	# 3. Verifica se algum lado estï¿½ vazio
+	beq s4, zero, game_over # Lado P1 estï¿½ vazio?
+	beq s5, zero, game_over # Lado P2 estï¿½ vazio?
 	
-	# Se nenhum lado está vazio, o jogo continua
-	li a0, 0 # Retorna 0 (jogo não acabou)
+	# Se nenhum lado estï¿½ vazio, o jogo continua
+	li a0, 0 # Retorna 0 (jogo nï¿½o acabou)
 	j restore_and_ret
 
 game_over:
 	# Jogo acabou. Precisamos fazer a captura final.
 	
-	# Carrega poço P1
-	add s7, s0, s2 # Endereço do poço P1
-	lw t0, 0(s7)   # Valor atual poço P1
+	# Carrega poï¿½o P1
+	add s7, s0, s2 # Endereï¿½o do poï¿½o P1
+	lw t0, 0(s7)   # Valor atual poï¿½o P1
 	
-	# Carrega poço P2
-	add s6, s0, s3 # Endereço do poço P2
-	lw t1, 0(s6)   # Valor atual poço P2
+	# Carrega poï¿½o P2
+	add s6, s0, s3 # Endereï¿½o do poï¿½o P2
+	lw t1, 0(s6)   # Valor atual poï¿½o P2
 	
 	# Se o lado P1 (s4) estava vazio, P2 captura o que sobrou (s5)
 	# Se o lado P2 (s5) estava vazio, P1 captura o que sobrou (s4)
 	
-	bne s4, zero, p2_side_empty # O lado P1 NÃO estava vazio? Pule.
+	bne s4, zero, p2_side_empty # O lado P1 Nï¿½O estava vazio? Pule.
 	
-	# Lado P1 estava vazio. Mova s5 (soma P2) para o poço P2.
-	add t1, t1, s5 # poço_p2 += soma_p2
-	sw t1, 0(s6)   # Salva novo valor no poço P2
+	# Lado P1 estava vazio. Mova s5 (soma P2) para o poï¿½o P2.
+	add t1, t1, s5 # poï¿½o_p2 += soma_p2
+	sw t1, 0(s6)   # Salva novo valor no poï¿½o P2
 	call clear_p2_side # Limpa as cavidades do P2
 	j set_game_over_return
 	
 p2_side_empty:
-	# Lado P2 estava vazio. Mova s4 (soma P1) para o poço P1.
-	add t0, t0, s4 # poço_p1 += soma_p1
-	sw t0, 0(s7)   # Salva novo valor no poço P1
+	# Lado P2 estava vazio. Mova s4 (soma P1) para o poï¿½o P1.
+	add t0, t0, s4 # poï¿½o_p1 += soma_p1
+	sw t0, 0(s7)   # Salva novo valor no poï¿½o P1
 	call clear_p1_side # Limpa as cavidades do P1
 
 set_game_over_return:
@@ -424,17 +427,17 @@ fim_jogo:
 	# Mostra o tabuleiro final
 	call mostrar_tabuleiro
 	
-	# Carrega sementes dos poços
-	add t0, s0, s2 # Endereço poço P1
+	# Carrega sementes dos poï¿½os
+	add t0, s0, s2 # Endereï¿½o poï¿½o P1
 	lw s4, 0(t0)   # s4 = total P1
-	add t1, s0, s3 # Endereço poço P2
+	add t1, s0, s3 # Endereï¿½o poï¿½o P2
 	lw s5, 0(t1)   # s5 = total P2
 	
 	# Compara os totais
 	bgt s4, s5, vitoria_p1
 	bgt s5, s4, vitoria_p2
 	
-	# Se não for maior, é empate
+	# Se nï¿½o for maior, ï¿½ empate
 	la a0, msg_empate
 	li a7, 4
 	ecall
@@ -444,7 +447,7 @@ vitoria_p1:
 	la a0, msg_vitoria_p1
 	li a7, 4
 	ecall
-	# Incrementa vitórias P1
+	# Incrementa vitï¿½rias P1
 	la t0, vitorias_p1
 	lw t1, 0(t0)
 	addi t1, t1, 1
@@ -455,7 +458,7 @@ vitoria_p2:
 	la a0, msg_vitoria_p2
 	li a7, 4
 	ecall
-	# Incrementa vitórias P2
+	# Incrementa vitï¿½rias P2
 	la t0, vitorias_p2
 	lw t1, 0(t0)
 	addi t1, t1, 1
@@ -487,17 +490,17 @@ fim_contagem:
 	li a7, 4
 	ecall
 	
-	la a0, newline # (Corrigindo: seu .data tem 'mewline', não 'newline')
+	la a0, newline # (Corrigindo: seu .data tem 'mewline', nï¿½o 'newline')
 	li a7, 4
 	ecall
 	
-	li a7, 5 # Lê um inteiro
+	li a7, 5 # Lï¿½ um inteiro
 	ecall
 	
 	li t0, 1
 	beq a0, t0, novo_jogo # Se digitou 1, joga de novo
 	
-	# Se não, encerra o programa
+	# Se nï¿½o, encerra o programa
 	li a7, 10
 	ecall
 

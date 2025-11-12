@@ -16,8 +16,8 @@
 	msg_sem_sementes: .asciz "Esta cavidade não está semeada, escolha uma com sementes.\n"
 	msg_invalida: .asciz "Esta cavidade não é válida, tente novamente.\n"
 	
-	msg_p1: .asciz "      --> JOGADOR 1\n"
-	msg_p2: .asciz "      <-- JOGADOR 2\n"
+	msg_p1: .asciz "      Vez do jogador 1\n"
+	msg_p2: .asciz "      Vez do jogador 2\n"
 	msg_vitoria_p1: .asciz "\nVitória do Player 1!"
 	msg_vitoria_p2: .asciz "\nVitória do Player 2!"
 	msg_empate: .asciz "\nO Empate!"
@@ -27,10 +27,10 @@
 	
 	barra: .asciz " | "
 	espaco: .asciz " "
-	mewline: .asciz "\n"
+	newline: .asciz "\n"
 	
 .align 2
-	tabuleiro: .space 56 # 14 cavidadesw
+	tabuleiro: .space 56 # 14 cavidades
 
 .text
 	# s0: ponteiro base do tabuleiro
@@ -107,7 +107,7 @@ mostrar_tabuleiro:
 	
 print_loop_p2:
 	beq t0, t1, print_loop_p2_fim
-	li s6, 4
+	li t6, 4
 	mul t2, t0, t6 #deslocamento indice * 4
 	add t3, s0, t2 #deslocamento + endereço base = posição desejada
 	lw a0, (t3) #carrega o valor de sementes
@@ -164,8 +164,8 @@ print_espacos_meio_fim:
 	
 print_loop_p1:
 	beq t0, t1, print_loop_p1_fim
-	li s6, 4
-	mul t2, t0, s6
+	li t6, 4
+	mul t2, t0, t6
 	add t3, s0, t2
 	lw a0, 0(t3)
 	li a7, 1
@@ -224,8 +224,8 @@ pede_jogada:
 	blt t3,t1, jogada_invalida
 	bgt t3,t2, jogada_invalida
 	
-	li s6, 4
-	mul t4, t3, s6
+	li t6, 4
+	mul t4, t3, t6
 	add t5, s0, t4
 	lw t6, 0(t5)
 	
@@ -274,14 +274,63 @@ distribui_sementes:
 	mv t0, a0             # t0 = índice atual
 	mv t1, a1             # t1 = sementes na mão
 	
-	# Esvazia a cavidade inicial
-	li s4, 4
-	mul t2, t0, s4
+	#esvazia a cavidade inicial
+	li t6, 4
+	mul t2, t0, t6
 	add t2, s0, t2
 	sw zero, 0(t2)
-	
-	
-	
 
+distribui_loop:
+	beq t1, zero, distribui_fim
 	
+	addi t0, t0, 1
+	#se chegar no indice 14, volta para o 0
+	lw t2, tabuleiro
+	bne t0, t2, distribui_continua
+	li t0, 0
+distribui_continua:
+
+	li t6, 4
+	mul t2, t0, t6
 	
+	li t3, 1
+	beq s1, t3, checa_poco_p2
+	
+	beq t2, s2, distribui_loop
+	j distribui_plantar
+	
+checa_poco_p2:
+	beq t2, s3, distribui_loop
+	
+distribui_plantar:
+	add t3, s0, t2
+	lw t4, 0(t3) #carrega sementes atuais
+	addi t4, t4, 1 
+	sw t4, 0(t3)
+	
+	addi t1, t1, -1
+	j distribui_loop
+	
+distribui_fim:
+	li t1, 1
+	beq s1, t1, checa_poco_p1
+	
+	beq t2, s3, distribui_denovo
+	j checa_captura
+	
+checa_poco_p1:
+	beq t2, s2, distribui_denovo
+	
+checa_captura:
+	li t6, 1
+	bne t4, t6, troca_turno
+	
+	j troca_turno
+	
+distribui_denovo:
+	li a0, 1
+	ret
+
+troca_turno:
+	li a0, 0
+	ret

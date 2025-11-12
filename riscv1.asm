@@ -3,7 +3,7 @@
 	poco_p1: .word 24 # índice 6*4 bytes
 	poco_p2: .word 52 # 13*4
 	tamanho_tabuleiro: .word 56
-	tabuleiro: .space 56 # 14 cavidades
+
 	
 	player_atual: .word 1
 	vitorias_p1: .word 0
@@ -28,6 +28,9 @@
 	barra: .asciz " | "
 	espaco: .asciz " "
 	mewline: .asciz "\n"
+	
+.align 2
+	tabuleiro: .space 56 # 14 cavidadesw
 
 .text
 	# s0: ponteiro base do tabuleiro
@@ -60,11 +63,11 @@ inicializar_tabuleiro:
 	lw t0, SEEDS_INIT # t0 recebe 4 sementes iniciais
 	lw t1, tabuleiro # t1 = 14 cavidades
 	li t2, 0 # t2 = i contador
-	
+	li t5, 4
 init_loop:
-	li t1, 4
+	
 	beq t2, t1, init_fim # se chegar na ultima cavidade acaba o loop init
-	mul t3, t2, t1 # multiplica o indice por 4 para o addi, o deslocamento é de 4 em 4 bytes
+	mul t3, t2, t5 # multiplica o indice por 4 para o addi, o deslocamento é de 4 em 4 bytes
 	# verifica se algum dos deslocamentos for igual aos dos poços
 	beq t3, s2, init_poco
 	beq t3, s3, init_poco
@@ -119,7 +122,7 @@ print_loop_p2:
 	j print_loop_p2
 
 print_loop_p2_fim:
-	la, a0, newline
+	la a0, newline
 	li a7, 4
 	ecall
 	

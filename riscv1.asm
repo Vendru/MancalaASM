@@ -16,14 +16,13 @@
 	msg_sem_sementes: .asciz "Esta cavidade não está semeada, escolha uma com sementes.\n"
 	msg_invalida: .asciz "Esta cavidade não é válida, tente novamente.\n"
 	
-	msg_p1: .asciz "      Vez do jogador 1\n"
-	msg_p2: .asciz "      Vez do jogador 2\n"
+
 	msg_vitoria_p1: .asciz "\nVitória do Player 1!"
 	msg_vitoria_p2: .asciz "\nVitória do Player 2!"
 	msg_empate: .asciz "\nO Empate!"
 	msg_vitorias_p1: .asciz "Placar; P1 -> "
 	msg_vitorias_p2: .asciz " | P2 -> "
-	msg_novo_jogo: .asciz "\nDigite 1 para jogar novamente"	
+	msg_novo_jogo: .asciz "\nDigite 1 para jogar novamente, 0 para sair"	
 	
 	barra: .asciz " | "
 	espaco: .asciz " "
@@ -39,9 +38,9 @@
 	# s3: offset poço P2 (52)
 	
 main:
-	la s0, tabuleiro #carrega o endereço inicial do tabuleiro
-	lw s2, poco_p1 # deslocamento para o poco p1
-	lw s3, poco_p2 # = p2
+	la s0, tabuleiro 
+	lw s2, poco_p1 
+	lw s3, poco_p2
 	
 	la a0, msg_bem_vindo
 	li a7, 4
@@ -54,39 +53,34 @@ main_loop:
 	
 	call verifica_fim_jogo
 	li t1, 1
-	beq a0, t1, fim_jogo # se o a0 for 1 é pq o jogo acabou
+	beq a0, t1, game_over 
 	call processa_jogada
 	
 	j main_loop
 	
 inicializar_tabuleiro:
-	lw t0, SEEDS_INIT # t0 recebe 4 sementes iniciais
+	lw t0, SEEDS_INIT 
 	
-	# --- CORREÇÃO AQUI ---
-	# 'lw t1, tabuleiro' estava errado (carregava 0)
-	# Precisamos carregar o NÚMERO 14 (total de cavidades)
-	li t1, 14 # t1 = 14 cavidades
-	# --- FIM DA CORREÇÃO ---
+	li t1, 14 
 	
-	li t2, 0 # t2 = i contador
-	li t6, 4 # t6 = 4 (para multiplicação de offset)
+	li t2, 0 
+	li t6, 4 
 	
 init_loop:
-	beq t2, t1, init_fim # se chegar na ultima cavidade acaba o loop init
+	beq t2, t1, init_fim 
 	
-	mul t3, t2, t6 # multiplica o indice por 4 para o addi, o deslocamento é de 4 em 4 bytes
+	mul t3, t2, t6 
 	
-	# verifica se algum dos deslocamentos for igual aos dos poços
 	beq t3, s2, init_poco
 	beq t3, s3, init_poco
 	
-	add t4, s0, t3 # t4 recebe o endereço inicial do tabuleiro + deslocamento
-	sw t0, 0(t4) # carrega o seeds init na cavidade -> 4 sementes
+	add t4, s0, t3 
+	sw t0, 0(t4) 
 	j init_continua
 	
 init_poco:
 	add t4, s0, t3
-	sw zero, 0(t4) #como é poço preenche com nada = 0
+	sw zero, 0(t4)
 
 init_continua:
 	addi t2, t2, 1
@@ -99,7 +93,6 @@ init_fim:
 	ret
 	
 mostrar_tabuleiro:
-	#addi -4 salva um espaço de 4 bytes para o ra
 	addi sp, sp, -4
 	sw ra, 0(sp)
 	
@@ -107,24 +100,20 @@ mostrar_tabuleiro:
 	li a7, 4
 	ecall
 	
-	la a0, msg_p2
-	li a7, 4
-	ecall
-	
 	la a0, espaco
 	li a7, 4
 	ecall
 	
-	li t0, 12 #indice t0 que começa em 12
-	li t1, 6 #t1 limite do p2, que termina em 6
-	li t6, 4 # Carrega o '4' para o offset fora do loop
+	li t0, 12 
+	li t1, 6 
+	li t6, 4 
 	
 print_loop_p2:
 	beq t0, t1, print_loop_p2_fim
 	
-	mul t2, t0, t6 #deslocamento indice * 4
-	add t3, s0, t2 #deslocamento + endereço base = posição desejada
-	lw a0, 0(t3) #carrega o valor de sementes
+	mul t2, t0, t6 
+	add t3, s0, t2 
+	lw a0, 0(t3) 
 	li a7, 1
 	ecall
 	
@@ -159,7 +148,7 @@ print_espacos_meio:
 	
 print_espacos_meio_fim:
 	
-	add t0, s0, s2        # Endereço poço P1
+	add t0, s0, s2    
 	lw a0, 0(t0)
 	li a7, 1
 	ecall
@@ -168,14 +157,13 @@ print_espacos_meio_fim:
 	li a7, 4
 	ecall
 
-	# imprime lado P1 (0 a 5)
 	la a0, espaco
 	li a7, 4
 	ecall
 
-	li t0, 0 # t0 = i (começa em 0)
-	li t1, 6 # t1 = limite (para quando i == 6)
-	li t6, 4 # Carrega o '4' para o offset fora do loop
+	li t0, 0
+	li t1, 6
+	li t6, 4
 	
 print_loop_p1:
 	beq t0, t1, print_loop_p1_fim
@@ -194,15 +182,10 @@ print_loop_p1:
 	j print_loop_p1
 	
 print_loop_p1_fim:
-	la a0, msg_p1
-	li a7, 4
-	ecall
-	
 	la a0, newline
 	li a7, 4
 	ecall
 	
-	#restaura stack que foi usada para armazenar ra
 	lw ra, 0(sp)
 	addi sp, sp, 4
 	ret
@@ -211,6 +194,7 @@ processa_jogada:
 	addi sp, sp, -4
 	sw ra, 0(sp)
 	
+loop_pede_jogada:
 	la t0, player_atual
 	lw s1,(t0)
 	
@@ -233,9 +217,8 @@ pede_jogada:
 	ecall
 	li a7, 5
 	ecall
-	mv t3, a0 # t3 recebe a cavidade selecionada
-	
-	#verifica se está entre 0 e 5 ou 7 e 12(depende se veio de play_p1 ou p2)
+	mv t3, a0 
+
 	blt t3,t1, jogada_invalida
 	bgt t3,t2, jogada_invalida
 	
@@ -272,13 +255,13 @@ jogada_invalida:
 	la a0, msg_invalida
 	li a7, 4
 	ecall
-	j pede_jogada
+	j loop_pede_jogada
 
 jogada_sem_sementes:
 	la a0, msg_sem_sementes
 	li a7, 4
 	ecall
-	j pede_jogada
+	j loop_pede_jogada
 	
 fim_processa_jogada:
 	lw ra, 0(sp)
@@ -286,10 +269,10 @@ fim_processa_jogada:
 	ret
 	
 distribui_sementes:
-	mv t0, a0               # t0 = índice atual
-	mv t1, a1               # t1 = sementes na mão
+	mv t0, a0
+	mv t1, a1
 	
-	#esvazia a cavidade inicial
+
 	li t6, 4
 	mul t2, t0, t6
 	add t2, s0, t2
@@ -300,11 +283,7 @@ distribui_loop:
 	
 	addi t0, t0, 1
 	
-	# --- CORREÇÃO AQUI ---
-	# 'lw t2, tabuleiro' estava errado (carregava 0)
-	# Precisamos carregar o NÚMERO 14
-	li t2, 14 # t2 = 14 (total de cavidades)
-	# --- FIM DA CORREÇÃO ---
+	li t2, 14
 	
 	bne t0, t2, distribui_continua
 	li t0, 0
@@ -324,7 +303,7 @@ checa_poco_p2:
 	
 distribui_plantar:
 	add t3, s0, t2
-	lw t4, 0(t3) #carrega sementes atuais
+	lw t4, 0(t3) 
 	addi t4, t4, 1
 	sw t4, 0(t3)
 	
@@ -361,16 +340,15 @@ checa_lado_p1:
 	
 captura:
 	li t5,12
-	sub t5, t5, t0 # para achar a casa do outro lado, faz 12 - o indice
+	sub t5, t5, t0
 	li t6, 4
 	mul t5, t5, t6 
 	add t5, s0, t5 
 	lw t6, 0(t5)
 	sw zero, 0(t5)
 	
-	beq t6, zero, troca_turno # se o oposto for 0, troca o turno
-	
-	addi t6, t6, 1 #sempre vai carregar o valor do oposto + 1
+	beq t6, zero, troca_turno
+	addi t6, t6, 1 
 	add t3, s0, t2
 	sw zero, 0(t3)
 	
@@ -399,89 +377,74 @@ troca_turno:
 	ret
 	
 verifica_fim_jogo:
-	# Salva registradores que vamos usar
 	addi sp, sp, -20
 	sw ra, 0(sp)
-	sw s4, 4(sp)  # s4 = soma_p1
-	sw s5, 8(sp)  # s5 = soma_p2
-	sw s6, 12(sp) # s6 = registrador de loop
-	sw s7, 16(sp) # s7 = endereço do poço
+	sw s4, 4(sp) 
+	sw s5, 8(sp) 
+	sw s6, 12(sp) 
+	sw s7, 16(sp) 
 
-	# 1. Soma as sementes do lado do P1 (cavidades 0-5)
-	li s4, 0 # s4 = soma_p1 = 0
-	li s6, 0 # s6 = i = 0
-	li t1, 4 # Carrega '4' para o offset fora do loop
+	li s4, 0 
+	li s6, 0 
+	li t1, 4 
 checa_p1_loop:
-	li t0, 6 # limite
+	li t0, 6
 	beq s6, t0, check_p1_fim
 	
 	mul t2, s6, t1
 	add t3, s0, t2
-	lw t4, 0(t3)  # Carrega sementes da cavidade
-	add s4, s4, t4 # soma_p1 += sementes
+	lw t4, 0(t3)  
+	add s4, s4, t4
 	
 	addi s6, s6, 1
 	j checa_p1_loop
 check_p1_fim:
 
-	# 2. Soma as sementes do lado do P2 (cavidades 7-12)
-	li s5, 0 # s5 = soma_p2 = 0
-	li s6, 7 # s6 = i = 7
-	li t1, 4 # Carrega '4' para o offset fora do loop
+	li s5, 0
+	li s6, 7
+	li t1, 4 
 checa_p2_loop:
-	li t0, 13 # limite
+	li t0, 13 
 	beq s6, t0, checa_p2_fim
 	
 	mul t2, s6, t1
 	add t3, s0, t2
-	lw t4, 0(t3)  # Carrega sementes da cavidade
-	add s5, s5, t4 # soma_p2 += sementes
+	lw t4, 0(t3)
+	add s5, s5, t4
 	
 	addi s6, s6, 1
 	j checa_p2_loop
 checa_p2_fim:
 
-	# 3. Verifica se algum lado está vazio
-	beq s4, zero, game_over # Lado P1 está vazio?
-	beq s5, zero, game_over # Lado P2 está vazio?
+	beq s4, zero, captura_final
+	beq s5, zero, captura_final
 	
-	# Se nenhum lado está vazio, o jogo continua
-	li a0, 0 # Retorna 0 (jogo não acabou)
+	li a0, 0 
 	j restaura_reg
 
-game_over:
-	# Jogo acabou. Precisamos fazer a captura final.
+captura_final:
+	add s7, s0, s2 
+	lw t0, 0(s7)   
 	
-	# Carrega poço P1
-	add s7, s0, s2 # Endereço do poço P1
-	lw t0, 0(s7)   # Valor atual poço P1
+	add s6, s0, s3 
+	lw t1, 0(s6)   
 	
-	# Carrega poço P2
-	add s6, s0, s3 # Endereço do poço P2
-	lw t1, 0(s6)   # Valor atual poço P2
 	
-	# Se o lado P1 (s4) estava vazio, P2 captura o que sobrou (s5)
-	# Se o lado P2 (s5) estava vazio, P1 captura o que sobrou (s4)
+	bne s4, zero, p2_vazio 
 	
-	bne s4, zero, p2_vazio # O lado P1 NÃO estava vazio? Pule.
-	
-	# Lado P1 estava vazio. Mova s5 (soma P2) para o poço P2.
-	add t1, t1, s5 # poço_p2 += soma_p2
-	sw t1, 0(s6)   # Salva novo valor no poço P2
-	call limpa_p2 # Limpa as cavidades do P2
+	add t1, t1, s5 
+	sw t1, 0(s6)   
+	call limpa_p2 
 	j seta_game_over
 	
 p2_vazio:
-	# Lado P2 estava vazio. Mova s4 (soma P1) para o poço P1.
-	add t0, t0, s4 # poço_p1 += soma_p1
-	sw t0, 0(s7)   # Salva novo valor no poço P1
-	call limpa_p1 # Limpa as cavidades do P1
-
+	add t0, t0, s4 
+	sw t0, 0(s7)
+	call limpa_p1 
 seta_game_over:
-	li a0, 1 # Retorna 1 (jogo acabou)
+	li a0, 1
 
 restaura_reg:
-	# Restaura registradores
 	lw ra, 0(sp)
 	lw s4, 4(sp)
 	lw s5, 8(sp)
@@ -492,18 +455,17 @@ restaura_reg:
 
 
 limpa_p1:
-	# Zera as cavidades 0-5
 	addi sp, sp, -4
 	sw ra, 0(sp)
-	li t0, 0 # i
-	li t2, 4 # Carrega '4' para o offset fora do loop
+	li t0, 0 
+	li t2, 4 
 limpa_p1_loop:
-	li t1, 6 # limite
+	li t1, 6 
 	beq t0, t1, limpa_p1_fim
 	
 	mul t3, t0, t2
-	add t3, s0, t2
-	sw zero, 0(t3) # Zera a cavidade
+	add t3, s0, t3
+	sw zero, 0(t3)
 	
 	addi t0, t0, 1
 	j limpa_p1_loop
@@ -513,18 +475,17 @@ limpa_p1_fim:
 	ret
 
 limpa_p2:
-	# Zera as cavidades 7-12
 	addi sp, sp, -4
 	sw ra, 0(sp)
-	li t0, 7 # i
-	li t2, 4 # Carrega '4' para o offset fora do loop
+	li t0, 7 
+	li t2, 4 
 limpa_p2_loop:
-	li t1, 13 # limite
+	li t1, 13 
 	beq t0, t1, limpa_p2_fim
 	
 	mul t3, t0, t2
-	add t3, s0, t2
-	sw zero, 0(t3) # Zera a cavidade
+	add t3, s0, t3
+	sw zero, 0(t3)
 	
 	addi t0, t0, 1
 	j limpa_p2_loop
@@ -534,32 +495,27 @@ limpa_p2_fim:
 	ret
 
 game_over:
-	# O jogo acabou (a0 = 1). Vamos verificar quem ganhou.
-	
-	# Mostra o tabuleiro final
 	call mostrar_tabuleiro
 	
-	# Carrega sementes dos poços
-	add t0, s0, s2 # Endereço poço P1
-	lw s4, 0(t0)   # s4 = total P1
-	add t1, s0, s3 # Endereço poço P2
-	lw s5, 0(t1)   # s5 = total P2
+
+	add t0, s0, s2 
+	lw s4, 0(t0) 
+	add t1, s0, s3 
+	lw s5, 0(t1)
 	
-	# Compara os totais
 	bgt s4, s5, vitoria_p1
 	bgt s5, s4, vitoria_p2
 	
-	# Se não for maior, é empate
 	la a0, msg_empate
 	li a7, 4
 	ecall
-	j fim_contagem # Pula para o fim
+	j fim_contagem 
 
 vitoria_p1:
 	la a0, msg_vitoria_p1
 	li a7, 4
 	ecall
-	# Incrementa vitórias P1
+
 	la t0, vitorias_p1
 	lw t1, 0(t0)
 	addi t1, t1, 1
@@ -570,7 +526,7 @@ vitoria_p2:
 	la a0, msg_vitoria_p2
 	li a7, 4
 	ecall
-	# Incrementa vitórias P2
+
 	la t0, vitorias_p2
 	lw t1, 0(t0)
 	addi t1, t1, 1
@@ -578,7 +534,6 @@ vitoria_p2:
 	j fim_contagem
 
 fim_contagem:
-	# Mostra o placar
 	la a0, msg_vitorias_p1
 	li a7, 4
 	ecall
@@ -597,7 +552,6 @@ fim_contagem:
 	li a7, 1
 	ecall
 	
-	# Pergunta se quer jogar novamente
 	la a0, msg_novo_jogo
 	li a7, 4
 	ecall
@@ -606,13 +560,12 @@ fim_contagem:
 	li a7, 4
 	ecall
 	
-	li a7, 5 # Lê um inteiro
+	li a7, 5
 	ecall
 	
 	li t0, 1
-	beq a0, t0, novo_jogo # Se digitou 1, joga de novo
+	beq a0, t0, novo_jogo
 	
-	# Se não, encerra o programa
 	li a7, 10
 	ecall
 

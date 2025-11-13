@@ -22,7 +22,7 @@
 	msg_vitoria_p2: .asciz "\nVitória do Player 2!"
 	msg_empate: .asciz "\nO Empate!"
 	msg_vitorias_p1: .asciz "Placar; P1 -> "
-	msg_vitorias_p2: .asciz " | p2 -> "
+	msg_vitorias_p2: .asciz " | P2 -> "
 	msg_novo_jogo: .asciz "\nDigite 1 para jogar novamente"	
 	
 	barra: .asciz " | "
@@ -345,8 +345,49 @@ checa_captura:
 	li t6, 1
 	bne t4, t6, troca_turno
 	
-	# (Lógica de captura real viria aqui)
 	
+	li t3, 1
+	beq s1, t3, checa_lado_p1
+	
+	li t5, 7
+	blt t0, t5, troca_turno
+	li t5, 12
+	bgt t0, t5, troca_turno
+	j captura
+	
+checa_lado_p1:
+	li t5,5
+	bgt t0, t5, troca_turno
+	
+captura:
+	li t5,12
+	sub t5, t5, t0 # para achar a casa do outro lado, faz 12 - o indice
+	li t6, 4
+	mul t5, t5, t6 
+	add t5, s0, t5 
+	lw t6, 0(t5)
+	sw zero, 0(t5)
+	
+	beq t6, zero, troca_turno # se o oposto for 0, troca o turno
+	
+	addi t6, t6, 1 #sempre vai carregar o valor do oposto + 1
+	add t3, s0, t2
+	sw zero, 0(t3)
+	
+	li t3, 1
+	beq s1, t3, add_poco_p1
+	
+	add t5, s0, s3
+	lw t4, 0(t5)
+	add t4, t4, t6
+	sw t4, 0(t5)
+	j troca_turno
+	
+add_poco_p1:
+	add t5, s0, s2
+	lw t4, 0(t5)
+	add t4, t4, t6
+	sw t4, 0(t5)
 	j troca_turno
 	
 distribui_denovo:
@@ -370,7 +411,7 @@ verifica_fim_jogo:
 	li s4, 0 # s4 = soma_p1 = 0
 	li s6, 0 # s6 = i = 0
 	li t1, 4 # Carrega '4' para o offset fora do loop
-check_p1_loop:
+checa_p1_loop:
 	li t0, 6 # limite
 	beq s6, t0, check_p1_fim
 	
@@ -380,16 +421,16 @@ check_p1_loop:
 	add s4, s4, t4 # soma_p1 += sementes
 	
 	addi s6, s6, 1
-	j check_p1_loop
+	j checa_p1_loop
 check_p1_fim:
 
 	# 2. Soma as sementes do lado do P2 (cavidades 7-12)
 	li s5, 0 # s5 = soma_p2 = 0
 	li s6, 7 # s6 = i = 7
 	li t1, 4 # Carrega '4' para o offset fora do loop
-check_p2_loop:
+checa_p2_loop:
 	li t0, 13 # limite
-	beq s6, t0, check_p2_fim
+	beq s6, t0, checa_p2_fim
 	
 	mul t2, s6, t1
 	add t3, s0, t2
@@ -397,8 +438,8 @@ check_p2_loop:
 	add s5, s5, t4 # soma_p2 += sementes
 	
 	addi s6, s6, 1
-	j check_p2_loop
-check_p2_fim:
+	j checa_p2_loop
+checa_p2_fim:
 
 	# 3. Verifica se algum lado está vazio
 	beq s4, zero, game_over # Lado P1 está vazio?
@@ -406,7 +447,7 @@ check_p2_fim:
 	
 	# Se nenhum lado está vazio, o jogo continua
 	li a0, 0 # Retorna 0 (jogo não acabou)
-	j restore_and_ret
+	j restaura_reg
 
 game_over:
 	# Jogo acabou. Precisamos fazer a captura final.
@@ -422,24 +463,24 @@ game_over:
 	# Se o lado P1 (s4) estava vazio, P2 captura o que sobrou (s5)
 	# Se o lado P2 (s5) estava vazio, P1 captura o que sobrou (s4)
 	
-	bne s4, zero, p2_side_empty # O lado P1 NÃO estava vazio? Pule.
+	bne s4, zero, p2_vazio # O lado P1 NÃO estava vazio? Pule.
 	
 	# Lado P1 estava vazio. Mova s5 (soma P2) para o poço P2.
 	add t1, t1, s5 # poço_p2 += soma_p2
 	sw t1, 0(s6)   # Salva novo valor no poço P2
-	call clear_p2_side # Limpa as cavidades do P2
-	j set_game_over_return
+	call limpa_p2 # Limpa as cavidades do P2
+	j seta_game_over
 	
-p2_side_empty:
+p2_vazio:
 	# Lado P2 estava vazio. Mova s4 (soma P1) para o poço P1.
 	add t0, t0, s4 # poço_p1 += soma_p1
 	sw t0, 0(s7)   # Salva novo valor no poço P1
-	call clear_p1_side # Limpa as cavidades do P1
+	call limpa_p1 # Limpa as cavidades do P1
 
-set_game_over_return:
+seta_game_over:
 	li a0, 1 # Retorna 1 (jogo acabou)
 
-restore_and_ret:
+restaura_reg:
 	# Restaura registradores
 	lw ra, 0(sp)
 	lw s4, 4(sp)
@@ -450,49 +491,49 @@ restore_and_ret:
 	ret
 
 
-clear_p1_side:
+limpa_p1:
 	# Zera as cavidades 0-5
 	addi sp, sp, -4
 	sw ra, 0(sp)
 	li t0, 0 # i
 	li t2, 4 # Carrega '4' para o offset fora do loop
-clear_p1_loop:
+limpa_p1_loop:
 	li t1, 6 # limite
-	beq t0, t1, clear_p1_end
+	beq t0, t1, limpa_p1_fim
 	
 	mul t3, t0, t2
 	add t3, s0, t2
 	sw zero, 0(t3) # Zera a cavidade
 	
 	addi t0, t0, 1
-	j clear_p1_loop
-clear_p1_end:
+	j limpa_p1_loop
+limpa_p1_fim:
 	lw ra, 0(sp)
 	addi sp, sp, 4
 	ret
 
-clear_p2_side:
+limpa_p2:
 	# Zera as cavidades 7-12
 	addi sp, sp, -4
 	sw ra, 0(sp)
 	li t0, 7 # i
 	li t2, 4 # Carrega '4' para o offset fora do loop
-clear_p2_loop:
+limpa_p2_loop:
 	li t1, 13 # limite
-	beq t0, t1, clear_p2_end
+	beq t0, t1, limpa_p2_fim
 	
 	mul t3, t0, t2
 	add t3, s0, t2
 	sw zero, 0(t3) # Zera a cavidade
 	
 	addi t0, t0, 1
-	j clear_p2_loop
-clear_p2_end:
+	j limpa_p2_loop
+limpa_p2_fim:
 	lw ra, 0(sp)
 	addi sp, sp, 4
 	ret
 
-fim_jogo:
+game_over:
 	# O jogo acabou (a0 = 1). Vamos verificar quem ganhou.
 	
 	# Mostra o tabuleiro final

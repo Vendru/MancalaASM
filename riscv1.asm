@@ -1,4 +1,5 @@
-
+# Wendell Luis Neris - 2311100035
+# Bruno Vendruscolo - 2221100004
 .data
 	SEEDS_INIT: .word 4
 	poco_p1: .word 24 # índice 6*4 bytes
